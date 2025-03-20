@@ -12,7 +12,7 @@ TELEGRAM_BOT_TOKEN = "7669153355:AAHFQrk5U6Uqno-i4v166VRMwdN34fsq8Kk"
 TRANSLATE_API_URL = "https://translate-vrv3.onrender.com/translate"
 
 # বাংলা শব্দের তালিকা
- BANGLA_WORDS = [
+BANGLA_WORDS = [
     " সে বই পড়ে", "গাছ এর নিচে কে?", "আকাশ কত বড় !", "সমুদ্র অনেক সুন্দর", "বন্ধুরা অনেক কাছের", "স্বপ্ন দেখা ভালো", "ভালোবাসা বড় করুন", " সূর্যের আলো অনেক তীব্র", "জল নিয়ে যাই", "মেঘ কি অনেক ঘন?"
  ]
 
