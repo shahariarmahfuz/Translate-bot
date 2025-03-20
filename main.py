@@ -1,5 +1,6 @@
 import os
 import requests
+import re
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackContext
 import random
@@ -18,6 +19,11 @@ BANGLA_WORDS = [
 # ব্যবহারকারীর তথ্য সংরক্ষণ
 user_data = {}
 
+def escape_markdown_v2(text):
+    """ MarkdownV2 ফরম্যাটের জন্য বিশেষ ক্যারেক্টারগুলো Escape করা """
+    escape_chars = r'_*[]()~`>#+-=|{}.!'
+    return re.sub(f'([{re.escape(escape_chars)}])', r'\\\1', text)
+
 async def start(update: Update, context: CallbackContext) -> None:
     """ যখন ইউজার /start কমান্ড পাঠাবে, তখন তাকে একটি বাংলা শব্দ দেওয়া হবে """
     user_id = update.message.chat_id
@@ -25,7 +31,7 @@ async def start(update: Update, context: CallbackContext) -> None:
     user_data[user_id] = word  # ইউজারের জন্য শব্দ সংরক্ষণ করা হলো
 
     await update.message.reply_text(
-        f"🔠 *অনুবাদ চ্যালেঞ্জ\!* নিচের বাংলা শব্দটির ইংরেজি লিখুন:\n\n*{word}*\n\n✍️ _উত্তর দিন:_",
+        f"🔠 *অনুবাদ চ্যালেঞ্জ\!* নিচের বাংলা শব্দটির ইংরেজি লিখুন:\n\n*{escape_markdown_v2(word)}*\n\n✍️ _উত্তর দিন:_",
         parse_mode="MarkdownV2"
     )
 
@@ -49,7 +55,7 @@ async def handle_translation(update: Update, context: CallbackContext) -> None:
 
         if result["status"] == "correct":
             await update.message.reply_text(
-                f"🟢 *Correct translation:* _{result['correct_translation']}_",
+                f"🟢 *Correct translation:* _{escape_markdown_v2(result['correct_translation'])}_",
                 parse_mode="MarkdownV2"
             )
         else:
@@ -59,19 +65,12 @@ async def handle_translation(update: Update, context: CallbackContext) -> None:
 
             error_text = "❌ *Your sentence is incorrect\\!*\n\n"
             
-            if errors["spelling"]:
-                error_text += f"🔠 *Spelling:* _{errors['spelling']}_\n"
-            else:
-                error_text += "🔠 *Spelling:* _বানান ভুল নেই\\._\n"
+            error_text += f"🔠 *Spelling:* _{escape_markdown_v2(errors.get('spelling', 'বানান ভুল নেই'))}_\n"
+            error_text += f"📖 *Grammar:* _{escape_markdown_v2(errors.get('grammar', 'ব্যাকরণ ভুল নেই'))}_\n"
 
-            if errors["grammar"]:
-                error_text += f"📖 *Grammar:* _{errors['grammar']}_\n"
-            else:
-                error_text += "📖 *Grammar:* _ব্যাকরণ ভুল নেই\\._\n"
-
-            error_text += f"\n❓ *Reason:* \n```{reason['incorrect_reason']}```\n"
-            error_text += f"\n✅ *Correct:* \n```{correction}```\n"
-            error_text += f"\n🟢 *Correct translation:* _{correction}_"
+            error_text += f"\n❓ *Reason:* \n```{escape_markdown_v2(reason['incorrect_reason'])}```\n"
+            error_text += f"\n✅ *Correct:* \n```{escape_markdown_v2(correction)}```\n"
+            error_text += f"\n🟢 *Correct translation:* _{escape_markdown_v2(correction)}_"
 
             await update.message.reply_text(error_text, parse_mode="MarkdownV2")
     else:
