@@ -53,11 +53,19 @@ async def handle_translation(update: Update, context: CallbackContext) -> None:
             reason = result["why"]
             correction = result["correct_translation"]
 
-            await update.message.reply_text(
-                f"❌ ভুল হয়েছে!\n\n🔍 **ভুলের কারণ:** {reason['incorrect_reason']}\n"
-                f"📌 **ব্যাখ্যা:** {reason['correction_explanation']}\n\n"
+            error_text = "❌ **ভুল হয়েছে!**\n\n"
+            if errors["spelling"]:
+                error_text += f"🔠 **বানান ভুল:** {errors['spelling']}\n"
+            if errors["grammar"]:
+                error_text += f"📖 **ব্যাকরণ ভুল:** {errors['grammar']}\n"
+            
+            error_text += (
+                f"❓ **ভুলের কারণ:** {reason['incorrect_reason']}\n"
+                f"📌 **সংশোধন:** {reason['correction_explanation']}\n\n"
                 f"✅ **সঠিক অনুবাদ:** {correction}"
             )
+
+            await update.message.reply_text(error_text)
     else:
         await update.message.reply_text("⚠️ অনুবাদ যাচাই করতে সমস্যা হচ্ছে। পরে চেষ্টা করুন।")
 
