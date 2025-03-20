@@ -68,8 +68,8 @@ async def handle_translation(update: Update, context: CallbackContext) -> None:
             error_text += f"🔠 *Spelling:* _{escape_markdown_v2(errors.get('spelling', 'বানান ভুল নেই'))}_\n"
             error_text += f"📖 *Grammar:* _{escape_markdown_v2(errors.get('grammar', 'ব্যাকরণ ভুল নেই'))}_\n"
 
-            error_text += f"\n❓ *Reason:* \n```{escape_markdown_v2(reason['incorrect_reason'])}```\n"
-            error_text += f"\n✅ *Correct:* \n```{escape_markdown_v2(correction)}```\n"
+            error_text += f"\n❓ *Reason:* \n>{escape_markdown_v2(reason['incorrect_reason'])}\n"
+            error_text += f"\n✅ *Correct:* \n>{escape_markdown_v2(correction)}\n"
             error_text += f"\n🟢 *Correct translation:* _{escape_markdown_v2(correction)}_"
 
             await update.message.reply_text(error_text, parse_mode="MarkdownV2")
