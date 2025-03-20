@@ -71,6 +71,7 @@ async def get_ban(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(f"❌ An error occurred: {str(e)}")
 
 # Handle Translation Response
+# Handle Translation Response
 async def handle_translation(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Check the user's translation."""
     user_id = update.message.from_user.id
@@ -88,20 +89,39 @@ async def handle_translation(update: Update, context: ContextTypes.DEFAULT_TYPE)
         if response.status_code == 200:
             data = response.json()
             if data.get("status") == "correct":
-                await update.message.reply_text(f"✅ Correct! 🎉\n\nCorrect Translation: {data.get('correct_translation')}")
+                message = (
+                    f"✅ Correct! 🎉\n\n"
+                    f"**Why it's correct:**\n"
+                    f"- Your translation matches the Bengali sentence perfectly.\n"
+                    f"- Grammar, spelling, and meaning are all accurate.\n\n"
+                    f"**Correct Translation:** {data.get('correct_translation')}"
+                )
+                await update.message.reply_text(message)
             else:
                 errors = data.get("errors", {})
-                error_message = "❌ Incorrect. Here are the errors:\n"
+                why_incorrect = data.get("why", {}).get("incorrect_reason", "No specific reason provided.")
+                correction_explanation = data.get("why", {}).get("correction_explanation", "No explanation provided.")
+
+                error_message = (
+                    f"❌ Incorrect. Here's why:\n\n"
+                    f"**Why it's incorrect:**\n"
+                    f"- {why_incorrect}\n\n"
+                    f"**Errors:**\n"
+                )
                 for error_type, error_detail in errors.items():
                     if error_detail:
                         error_message += f"- {error_type}: {error_detail}\n"
-                error_message += f"\nCorrect Translation: {data.get('correct_translation')}"
+                
+                error_message += (
+                    f"\n**Correction Explanation:**\n"
+                    f"- {correction_explanation}\n\n"
+                    f"**Correct Translation:** {data.get('correct_translation')}"
+                )
                 await update.message.reply_text(error_message)
         else:
             await update.message.reply_text("❌ Failed to check your translation. Please try again later.")
     except Exception as e:
         await update.message.reply_text(f"❌ An error occurred: {str(e)}")
-
 # Main Function
 def main():
     """Start the bot."""
