@@ -9,7 +9,7 @@ import random
 TELEGRAM_BOT_TOKEN = "7669153355:AAHFQrk5U6Uqno-i4v166VRMwdN34fsq8Kk"
 
 # Flask API এর URL (নিজের API লিংক দিন)
-TRANSLATE_API_URL = "https://new-ai-buxr.onrender.com/translate"
+TRANSLATE_API_URL = "https://translate-vrv3.onrender.com/translate"
 
 # API থেকে বাংলা বাক্য পাওয়ার URL
 GET_SENTENCE_API_URL = "https://translate-vrv3.onrender.com/get"
