@@ -25,7 +25,8 @@ async def start(update: Update, context: CallbackContext) -> None:
     user_data[user_id] = word  # ইউজারের জন্য শব্দ সংরক্ষণ করা হলো
 
     await update.message.reply_text(
-        f"🔠 অনুবাদ চ্যালেঞ্জ! নিচের বাংলা শব্দটির ইংরেজি লিখুন:\n**{word}**\n\n✍️ উত্তর দিন:"
+        f"🔠 *অনুবাদ চ্যালেঞ্জ\!* নিচের বাংলা শব্দটির ইংরেজি লিখুন:\n\n*{word}*\n\n✍️ _উত্তর দিন:_",
+        parse_mode="MarkdownV2"
     )
 
 async def handle_translation(update: Update, context: CallbackContext) -> None:
@@ -34,7 +35,7 @@ async def handle_translation(update: Update, context: CallbackContext) -> None:
     user_translation = update.message.text
 
     if user_id not in user_data:
-        await update.message.reply_text("⚠️ অনুগ্রহ করে /start দিয়ে শুরু করুন।")
+        await update.message.reply_text("⚠️ অনুগ্রহ করে /start দিয়ে শুরু করুন।", parse_mode="MarkdownV2")
         return
 
     bangla_word = user_data[user_id]
@@ -47,38 +48,46 @@ async def handle_translation(update: Update, context: CallbackContext) -> None:
         result = response.json()
 
         if result["status"] == "correct":
-            await update.message.reply_text(f"✅ সঠিক! 🎉\n\nসঠিক অনুবাদ: {result['correct_translation']}")
+            await update.message.reply_text(
+                f"🟢 *Correct translation:* _{result['correct_translation']}_",
+                parse_mode="MarkdownV2"
+            )
         else:
             errors = result["errors"]
             reason = result["why"]
             correction = result["correct_translation"]
 
-            error_text = "❌ **ভুল হয়েছে!**\n\n"
-            if errors["spelling"]:
-                error_text += f"🔠 **বানান ভুল:** {errors['spelling']}\n"
-            if errors["grammar"]:
-                error_text += f"📖 **ব্যাকরণ ভুল:** {errors['grammar']}\n"
+            error_text = "❌ *Your sentence is incorrect\\!*\n\n"
             
-            error_text += (
-                f"❓ **ভুলের কারণ:** {reason['incorrect_reason']}\n"
-                f"📌 **সংশোধন:** {reason['correction_explanation']}\n\n"
-                f"✅ **সঠিক অনুবাদ:** {correction}"
-            )
+            if errors["spelling"]:
+                error_text += f"🔠 *Spelling:* _{errors['spelling']}_\n"
+            else:
+                error_text += "🔠 *Spelling:* _বানান ভুল নেই\\._\n"
 
-            await update.message.reply_text(error_text)
+            if errors["grammar"]:
+                error_text += f"📖 *Grammar:* _{errors['grammar']}_\n"
+            else:
+                error_text += "📖 *Grammar:* _ব্যাকরণ ভুল নেই\\._\n"
+
+            error_text += f"\n❓ *Reason:* \n```{reason['incorrect_reason']}```\n"
+            error_text += f"\n✅ *Correct:* \n```{correction}```\n"
+            error_text += f"\n🟢 *Correct translation:* _{correction}_"
+
+            await update.message.reply_text(error_text, parse_mode="MarkdownV2")
     else:
-        await update.message.reply_text("⚠️ অনুবাদ যাচাই করতে সমস্যা হচ্ছে। পরে চেষ্টা করুন।")
+        await update.message.reply_text("⚠️ অনুবাদ যাচাই করতে সমস্যা হচ্ছে। পরে চেষ্টা করুন।", parse_mode="MarkdownV2")
 
 async def help_command(update: Update, context: CallbackContext) -> None:
     """ ইউজার যদি /help কমান্ড দেয়, তাকে নির্দেশনা দেওয়া হবে """
     await update.message.reply_text(
-        "📖 **ব্যবহারের নিয়ম:**\n"
-        "1️⃣ /start দিন, আমরা আপনাকে একটি বাংলা শব্দ দেবো।\n"
+        "📖 *ব্যবহারের নিয়ম:*\n"
+        "1️⃣ `/start` দিন, আমরা আপনাকে একটি বাংলা শব্দ দেবো।\n"
         "2️⃣ আপনি এর ইংরেজি অনুবাদ লিখুন।\n"
         "3️⃣ আমরা যাচাই করে বলব সঠিক নাকি ভুল!\n\n"
         "✅ সঠিক হলে আপনি জিতে যাবেন 🎉\n"
         "❌ ভুল হলে আমরা ভুলটি সংশোধন করে দেখাবো।\n"
-        "🚀 শিখুন এবং উন্নতি করুন!"
+        "🚀 শিখুন এবং উন্নতি করুন!",
+        parse_mode="MarkdownV2"
     )
 
 def main():
