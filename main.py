@@ -1,152 +1,122 @@
 import os
+import json
 import requests
-import re
-from telegram import Update
-from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackContext
-import random
+from datetime import datetime
+from telegram import Update, ReplyKeyboardMarkup
+from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 
-# টেলিগ্রাম বট টোকেন (নিজের টোকেন বসান)
-TELEGRAM_BOT_TOKEN = "7669153355:AAHFQrk5U6Uqno-i4v166VRMwdN34fsq8Kk"
+# Configuration
+TELEGRAM_BOT_TOKEN = "7669153355:AAHFQrk5U6Uqno-i4v166VRMwdN34fsq8Kk"  # Set your bot token as an environment variable
+API_URL = "https://translate-vrv3.onrender.com"  # Replace with your API URL
 
-# Flask API এর URL (নিজের API লিংক দিন)
-TRANSLATE_API_URL = "https://translate-vrv3.onrender.com/translate"
+# Store user levels
+user_levels = {}
 
-# API থেকে বাংলা বাক্য পাওয়ার URL
-GET_SENTENCE_API_URL = "https://translate-vrv3.onrender.com/get"
+# Command: Start
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Send a welcome message and instructions."""
+    welcome_message = """
+🌟 Welcome to the English Learning Bot! 🌟
 
-# ইউজারের তথ্য সংরক্ষণ (লেভেল এবং টাস্কের জন্য শব্দ/সেন্টেন্স)
-user_data = {}
+Here's how to use me:
+1. Set your level using /set <level> (e.g., /set 25).
+2. Get a Bengali sentence using /get_ban.
+3. Translate the sentence and send it back to me for checking.
 
-def escape_markdown_v2(text):
-    """MarkdownV2 ফরম্যাটের জন্য বিশেষ ক্যারেক্টার Escape করা"""
-    escape_chars = r'_*()~`>#+-=|{}.!'
-    return re.sub(f'([{re.escape(escape_chars)}])', r'\\\1', text)
+Let's get started! Use /set <level> to begin.
+    """
+    await update.message.reply_text(welcome_message)
 
-async def set_level(update: Update, context: CallbackContext) -> None:
-    """ ইউজারকে লেভেল সেট করার জন্য হ্যান্ডেল করবে """
-    user_id = update.message.chat_id
+# Command: Set Level
+async def set_level(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Set the user's level."""
+    user_id = update.message.from_user.id
     try:
         level = int(context.args[0])
         if 1 <= level <= 100:
-            user_data[user_id] = {"level": level}
-            await update.message.reply_text(f"✅ আপনার লেভেল সেট করা হয়েছে: {level}", parse_mode="MarkdownV2")
+            user_levels[user_id] = level
+            await update.message.reply_text(f"✅ Your level has been set to {level}. Use /get_ban to start learning!")
         else:
-            await update.message.reply_text("⚠️ লেভেল ১ থেকে ১০০ এর মধ্যে হতে হবে।", parse_mode="MarkdownV2")
+            await update.message.reply_text("❌ Level must be between 1 and 100.")
     except (IndexError, ValueError):
-        await update.message.reply_text("⚠️ লেভেল সেট করার জন্য `/setlevel [১-১০০]` এভাবে লিখুন।", parse_mode="MarkdownV2")
+        await update.message.reply_text("❌ Please provide a valid level. Usage: /set <level>")
 
-async def start(update: Update, context: CallbackContext) -> None:
-    """ ইউজার যখন /start দিবে, তখন তাকে একটি বাংলা বাক্য দেওয়া হবে """
-    user_id = update.message.chat_id
+# Command: Get Bengali Sentence
+async def get_ban(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Get a Bengali sentence for translation."""
+    user_id = update.message.from_user.id
 
-    if user_id not in user_data or "level" not in user_data[user_id]:
-        await update.message.reply_text("⚙️ অনুগ্রহ করে প্রথমে আপনার লেভেল সেট করুন `/setlevel [১-১০০]` কমান্ড ব্যবহার করে।", parse_mode="MarkdownV2")
+    # Check if level is set
+    if user_id not in user_levels:
+        await update.message.reply_text("❌ Please set your level first using /set <level>.")
         return
 
-    level = user_data[user_id]["level"]
-    params = {"level": level, "id": user_id}  # Added the user_id as 'id' parameter
+    level = user_levels[user_id]
+
+    # Call the API to get a Bengali sentence
     try:
-        response = requests.get(GET_SENTENCE_API_URL, params=params)
-        response.raise_for_status()  # Raises HTTPError for bad responses (4xx or 5xx)
-        data = response.json()
-        bangla_sentence = data["sentence"]
-        user_data[user_id]["current_sentence"] = bangla_sentence  # ইউজারের জন্য বাক্য সংরক্ষণ
+        response = requests.get(f"{API_URL}/get?level={level}&id={user_id}")
+        if response.status_code == 200:
+            data = response.json()
+            sentence = data.get("sentence")
+            tracking_code = data.get("tracking_code")
 
-        await update.message.reply_text(
-            f"✍️ *অনুবাদ চ্যালেঞ্জ\\!* নিচের বাংলা বাক্যটির ইংরেজি লিখুন:\n\n*{escape_markdown_v2(bangla_sentence)}*\n\n📝 _আপনার উত্তর:_ ",
-            parse_mode="MarkdownV2"
-        )
-    except requests.exceptions.RequestException as e:
-        await update.message.reply_text(f"⚠️ বাংলা বাক্য পেতে সমস্যা হচ্ছে: {e}", parse_mode="MarkdownV2")
-    except (KeyError, ValueError):
-        await update.message.reply_text("⚠️ অপ্রত্যাশিত ত্রুটি ঘটেছে।", parse_mode="MarkdownV2")
+            # Store the tracking code in the user's context
+            context.user_data["tracking_code"] = tracking_code
 
-async def handle_translation(update: Update, context: CallbackContext) -> None:
-    """ ইউজারের উত্তর API-তে পাঠিয়ে যাচাই করা হবে """
-    user_id = update.message.chat_id
+            await update.message.reply_text(f"📝 Translate this sentence:\n\n{sentence}")
+        else:
+            await update.message.reply_text("❌ Failed to get a sentence. Please try again later.")
+    except Exception as e:
+        await update.message.reply_text(f"❌ An error occurred: {str(e)}")
+
+# Handle Translation Response
+async def handle_translation(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Check the user's translation."""
+    user_id = update.message.from_user.id
     user_translation = update.message.text
 
-    if user_id not in user_data or "current_sentence" not in user_data[user_id]:
-        await update.message.reply_text("⚠️ অনুগ্রহ করে /start দিয়ে শুরু করুন।", parse_mode="MarkdownV2")
+    # Check if there's a tracking code
+    tracking_code = context.user_data.get("tracking_code")
+    if not tracking_code:
+        await update.message.reply_text("❌ No active translation task. Use /get_ban to start.")
         return
 
-    bangla_sentence = user_data[user_id]["current_sentence"]
-
-    # API-তে অনুরোধ পাঠানো
-    params = {"ban": bangla_sentence, "eng": user_translation}
+    # Call the API to check the translation
     try:
-        response = requests.get(TRANSLATE_API_URL, params=params)
-        response.raise_for_status()
-        result = response.json()
-
-        if result["status"] == "correct":
-            await update.message.reply_text(
-                f"✅ *সঠিক অনুবাদ:* _{escape_markdown_v2(result['correct_translation'])}_ 🎉",
-                parse_mode="MarkdownV2"
-            )
+        response = requests.get(f"{API_URL}/translate?code={tracking_code}&en={user_translation}")
+        if response.status_code == 200:
+            data = response.json()
+            if data.get("status") == "correct":
+                await update.message.reply_text(f"✅ Correct! 🎉\n\nCorrect Translation: {data.get('correct_translation')}")
+            else:
+                errors = data.get("errors", {})
+                error_message = "❌ Incorrect. Here are the errors:\n"
+                for error_type, error_detail in errors.items():
+                    if error_detail:
+                        error_message += f"- {error_type}: {error_detail}\n"
+                error_message += f"\nCorrect Translation: {data.get('correct_translation')}"
+                await update.message.reply_text(error_message)
         else:
-            errors = result["errors"]
-            reason = result["why"]
-            correction = result["correct_translation"]
+            await update.message.reply_text("❌ Failed to check your translation. Please try again later.")
+    except Exception as e:
+        await update.message.reply_text(f"❌ An error occurred: {str(e)}")
 
-            error_text = "❌ *আপনার উত্তরটি সঠিক নয়\\!*\n\n"
-
-            # **Spelling ভুলের তথ্য**
-            spelling_error = errors.get('spelling', '')
-            if spelling_error:
-                error_text += f"🔠 *বানান:* _{escape_markdown_v2(spelling_error)}_\n"
-
-            # **Grammar ভুলের তথ্য**
-            grammar_error = errors.get('grammar', '')
-            if grammar_error:
-                error_text += f"📖 *ব্যাকরণ:* _{escape_markdown_v2(grammar_error)}_\n"
-
-            # **ভুলের কারণ ও ব্যাখ্যা (AI থেকে সরাসরি)**
-            incorrect_reason = escape_markdown_v2(reason.get("incorrect_reason", "ব্যাখ্যা পাওয়া যায়নি"))
-            correction_explanation = escape_markdown_v2(reason.get("correction_explanation", "সংশোধনীর ব্যাখ্যা পাওয়া যায়নি"))
-
-            error_text += f"\n❓ *কারণ:* \n> {incorrect_reason}\n"
-            error_text += f"\n🛠 *সংশোধনী ব্যাখ্যা:* \n> {correction_explanation}\n"
-
-            # **সঠিক অনুবাদ**
-            error_text += f"\n🟢 *সঠিক অনুবাদ:* _{escape_markdown_v2(correction)}_"
-
-            await update.message.reply_text(error_text, parse_mode="MarkdownV2")
-
-    except requests.exceptions.RequestException as e:
-        await update.message.reply_text(f"⚠️ অনুবাদ যাচাই করতে সমস্যা হচ্ছে: {escape_markdown_v2(str(e))}", parse_mode="MarkdownV2")
-    except (KeyError, ValueError):
-        await update.message.reply_text("⚠️ অপ্রত্যাশিত ত্রুটি ঘটেছে।", parse_mode="MarkdownV2")
-
-async def help_command(update: Update, context: CallbackContext) -> None:
-    """ ইউজার যদি /help কমান্ড দেয়, তাহলে নির্দেশনা দেওয়া হবে """
-    help_text = (
-        "📖 *ব্যবহারের নিয়ম:*\n"
-        "1️⃣ প্রথমে আপনার লেভেল সেট করুন `/setlevel \\[১-১০০\\]` কমান্ড দিয়ে। লেভেল যত কম, বাক্য তত সহজ হবে।\n"
-        "2️⃣ `/start` দিন, আমরা আপনাকে একটি বাংলা বাক্য দেবো।\n"
-        "3️⃣ আপনি এর ইংরেজি অনুবাদ লিখুন।\n"
-        "4️⃣ আমরা যাচাই করে বলব সঠিক নাকি ভুল!\n\n"
-        "✅ সঠিক হলে আপনি জিতে যাবেন 🎉\n"
-        "❌ ভুল হলে আমরা ভুলটি সংশোধন করে দেখাবো।\n"
-        "🚀 শিখুন এবং উন্নতি করুন!"
-    )
-    await update.message.reply_text(help_text, parse_mode="MarkdownV2")
-
+# Main Function
 def main():
-    """ প্রধান ফাংশন যেখানে বট চালানো হবে """
-    app = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
+    """Start the bot."""
+    # Create the Application
+    application = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
 
-    # কমান্ড হ্যান্ডলার
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(CommandHandler("help", help_command))
-    app.add_handler(CommandHandler("setlevel", set_level))
+    # Add Handlers
+    application.add_handler(CommandHandler("start", start))
+    application.add_handler(CommandHandler("set", set_level))
+    application.add_handler(CommandHandler("get_ban", get_ban))
+    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_translation))
 
-    # মেসেজ হ্যান্ডলার (ইউজার যে মেসেজ পাঠাবে সেটি হ্যান্ডল করবে)
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_translation))
-
-    # বট চালু করুন
-    print("🤖 Bot is running...")
-    app.run_polling()
+    # Start the Bot
+    print("🚀 Bot is running...")
+    application.run_polling()
 
 if __name__ == "__main__":
     main()
