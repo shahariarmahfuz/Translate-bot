@@ -5,10 +5,10 @@ from telegram.ext import Application, CommandHandler, MessageHandler, filters, C
 import random
 
 # টেলিগ্রাম বট টোকেন (এটি নিজের টোকেন দিয়ে প্রতিস্থাপন করুন)
-TELEGRAM_BOT_TOKEN = "YOUR_TELEGRAM_BOT_TOKEN"
+TELEGRAM_BOT_TOKEN = "7305874644:AAEcpUBhpmmOrv0rE-0xTJsUSxsTmO5qZHw"
 
 # Flask সার্ভারের URL (এটি নিজের সার্ভারের ঠিকানা দিন)
-TRANSLATE_API_URL = "https://new-ai-buxr.onrender.com/translate"
+TRANSLATE_API_URL = "https://translate-vrv3.onrender.com/translate"
 
 # কিছু বাংলা শব্দের তালিকা
 BANGLA_WORDS = [
