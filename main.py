@@ -15,7 +15,7 @@ user_progress = {}
 
 # Function to escape Markdown V2 special characters
 def escape_markdown(text):
-    escape_chars = r"_*[]()~`>#+-=|{}.!"
+    escape_chars = r"_*[]()~`>#+-=|{}.!:"
     return "".join(f"\\{char}" if char in escape_chars else char for char in text)
 
 # Command: Start
@@ -71,7 +71,9 @@ async def get_ban(update: Update, context: ContextTypes.DEFAULT_TYPE):
             # Store the tracking code in the user's context
             context.user_data["tracking_code"] = tracking_code
 
-            await update.message.reply_text(f"📝 *Translate this sentence:*\n\n`{escape_markdown(sentence)}`", parse_mode='MarkdownV2')
+            # Escape special characters in the sentence
+            escaped_sentence = escape_markdown(sentence)
+            await update.message.reply_text(f"📝 *Translate this sentence:*\n\n`{escaped_sentence}`", parse_mode='MarkdownV2')
         else:
             await update.message.reply_text("❌ *Failed to get a sentence\. Please try again later\.*", parse_mode='MarkdownV2')
     except Exception as e:
@@ -96,24 +98,25 @@ async def handle_translation(update: Update, context: ContextTypes.DEFAULT_TYPE)
             data = response.json()
             if data.get("status") == "correct":
                 user_progress[user_id]["correct"] += 1
+                correct_translation = escape_markdown(data.get("correct_translation", "No correct translation provided."))
                 message = (
                     f"✅ *Correct\!* 🎉\n\n"
                     f"**Why it's correct:**\n"
                     f"- Your translation matches the Bengali sentence perfectly\.\n"
                     f"- Grammar, spelling, and meaning are all accurate\.\n\n"
-                    f"**Correct Translation:** `{escape_markdown(data.get('correct_translation'))}`"
+                    f"**Correct Translation:** `{correct_translation}`"
                 )
                 await update.message.reply_text(message, parse_mode='MarkdownV2')
             else:
                 user_progress[user_id]["incorrect"] += 1
-                why_incorrect = data.get("why", "No specific reason provided\.")
-                correct_translation = data.get("correct_translation", "No correct translation provided\.")
+                why_incorrect = escape_markdown(data.get("why", "No specific reason provided."))
+                correct_translation = escape_markdown(data.get("correct_translation", "No correct translation provided."))
 
                 error_message = (
                     f"❌ *Incorrect\. Here's why:*\n\n"
                     f"**Why it's incorrect:**\n"
-                    f"- {escape_markdown(why_incorrect)}\n\n"
-                    f"**Correct Translation:** `{escape_markdown(correct_translation)}`"
+                    f"- {why_incorrect}\n\n"
+                    f"**Correct Translation:** `{correct_translation}`"
                 )
                 await update.message.reply_text(error_message, parse_mode='MarkdownV2')
         else:
