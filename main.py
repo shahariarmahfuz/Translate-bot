@@ -16,7 +16,7 @@ user_progress = {}
 # Function to escape Markdown V2 special characters
 def escape_markdown(text):
     escape_chars = r"_*[]()~`>#+=|{}.!:"
-    return "".join(f"\\{char}" if char in escape_chars else char for char in text).replace("-", "\\-")
+    return "".join(f"\\{char}" if char in escape_chars else char for char in text).replace("-", "\\-").replace(".", "\\.")
 
 # Command: Start
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
