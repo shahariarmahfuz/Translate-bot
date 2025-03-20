@@ -14,7 +14,7 @@ TRANSLATE_API_URL = "https://translate-vrv3.onrender.com/translate"
 # বাংলা শব্দের তালিকা
 BANGLA_WORDS = [
     " সে বই পড়ে", "গাছ এর নিচে কে?", "আকাশ কত বড় !", "সমুদ্র অনেক সুন্দর", "বন্ধুরা অনেক কাছের", "স্বপ্ন দেখা ভালো", "ভালোবাসা বড় করুন", " সূর্যের আলো অনেক তীব্র", "জল নিয়ে যাই", "মেঘ কি অনেক ঘন?"
- ]
+]
 
 # ইউজারের তথ্য সংরক্ষণ
 user_data = {}
@@ -66,12 +66,14 @@ async def handle_translation(update: Update, context: CallbackContext) -> None:
             error_text = "❌ *Your sentence is incorrect\\!*\n\n"
 
             # **Spelling ভুলের তথ্য**
-            spelling_error = errors.get('spelling', 'বানান ভুল নেই')
-            error_text += f"🔠 *Spelling:* _{escape_markdown_v2(spelling_error)}_\n"
+            spelling_error = errors.get('spelling', '')
+            if spelling_error:
+                error_text += f"🔠 *Spelling:* _{escape_markdown_v2(spelling_error)}_\n"
 
             # **Grammar ভুলের তথ্য**
-            grammar_error = errors.get('grammar', 'ব্যাকরণ ভুল নেই')
-            error_text += f"📖 *Grammar:* _{escape_markdown_v2(grammar_error)}_\n"
+            grammar_error = errors.get('grammar', '')
+            if grammar_error:
+                error_text += f"📖 *Grammar:* _{escape_markdown_v2(grammar_error)}_\n"
 
             # **ভুলের কারণ ও ব্যাখ্যা (AI থেকে সরাসরি)**
             incorrect_reason = escape_markdown_v2(reason["incorrect_reason"])
