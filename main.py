@@ -53,7 +53,7 @@ async def start(update: Update, context: CallbackContext) -> None:
         user_data[user_id]["current_sentence"] = bangla_sentence  # ইউজারের জন্য বাক্য সংরক্ষণ
 
         await update.message.reply_text(
-            f"✍️ *অনুবাদ চ্যালেঞ্জ\!* নিচের বাংলা বাক্যটির ইংরেজি লিখুন:\n\n*{escape_markdown_v2(bangla_sentence)}*\n\n📝 _আপনার উত্তর:_ ",
+            f"✍️ *অনুবাদ চ্যালেঞ্জ\\!* নিচের বাংলা বাক্যটির ইংরেজি লিখুন:\n\n*{escape_markdown_v2(bangla_sentence)}*\n\n📝 _আপনার উত্তর:_ ",
             parse_mode="MarkdownV2"
         )
     except requests.exceptions.RequestException as e:
