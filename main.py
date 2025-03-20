@@ -27,8 +27,8 @@ async def start(update: Update, context: CallbackContext) -> None:
     await update.message.reply_text(
         "🔠 *Level Setting*\n\nআপনার অনুবাদের জন্য লেভেল সেট করুন।\n"
         "এটি একবার সেট করলে বারবার সেট করতে হবে না।\n\n"
-        "লেভেল এর উদাহরণ: beginner, intermediate, advanced\n\n"
-        "👉 লেভেল সেট করতে `/setlevel <level>` কমান্ড ব্যবহার করুন।",
+        "লেভেল একটি সংখ্যা হবে ১ থেকে ১০০ পর্যন্ত।\n\n"
+        "👉 লেভেল সেট করতে `/setlevel <level>` কমান্ড ব্যবহার করুন। উদাহরণ: `/setlevel 5`",
         parse_mode="MarkdownV2"
     )
 
@@ -38,22 +38,24 @@ async def set_level(update: Update, context: CallbackContext) -> None:
 
     if len(context.args) != 1:
         await update.message.reply_text(
-            "⚠️ লেভেল সঠিকভাবে প্রবেশ করুন। উদাহরণ: `/setlevel beginner`"
+            "⚠️ লেভেল সঠিকভাবে প্রবেশ করুন। উদাহরণ: `/setlevel 5`"
         )
         return
 
-    level = context.args[0].lower()
+    try:
+        level = int(context.args[0])
+    except ValueError:
+        await update.message.reply_text("⚠️ অনুগ্রহ করে একটি বৈধ সংখ্যা প্রবেশ করুন (১ থেকে ১০০)।")
+        return
 
-    if level not in ["beginner", "intermediate", "advanced"]:
-        await update.message.reply_text(
-            "⚠️ কেবল `beginner`, `intermediate`, বা `advanced` লেভেল প্রবেশ করুন।"
-        )
+    if level < 1 or level > 100:
+        await update.message.reply_text("⚠️ লেভেলটি ১ থেকে ১০০ এর মধ্যে হওয়া উচিত।")
         return
 
     user_data[user_id]["level"] = level
 
     await update.message.reply_text(
-        f"✔️ আপনার লেভেল সফলভাবে সেট করা হয়েছে: `{escape_markdown_v2(level)}`",
+        f"✔️ আপনার লেভেল সফলভাবে সেট করা হয়েছে: `{escape_markdown_v2(str(level))}`",
         parse_mode="MarkdownV2"
     )
 
@@ -94,7 +96,7 @@ async def handle_translation(update: Update, context: CallbackContext) -> None:
 
     # Translate API-তে অনুরোধ পাঠানো
     params = {"ban": bangla_sentence, "eng": user_translation}
-    response = requests.get("https://translate-vrv3.onrender.com/translate", params=params)
+    response = requests.get("https://new-ai-buxr.onrender.com/translate", params=params)
 
     if response.status_code == 200:
         result = response.json()
