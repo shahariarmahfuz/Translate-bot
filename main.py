@@ -2,7 +2,7 @@ import os
 import json
 import requests
 from datetime import datetime
-from telegram import Update, ReplyKeyboardMarkup
+from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 
 # Configuration
@@ -13,25 +13,20 @@ API_URL = "https://translate-vrv3.onrender.com"  # Replace with your API URL
 user_levels = {}
 user_progress = {}
 
-# Function to escape Markdown V2 special characters
-def escape_markdown(text):
-    escape_chars = r"_*[]()~`>#+=|{}.!:"
-    return "".join(f"\\{char}" if char in escape_chars else char for char in text).replace("-", "\\-").replace(".", "\\.")
-
 # Command: Start
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Send a welcome message and instructions."""
-    welcome_message = escape_markdown("""
-🌟 *Welcome to the English Learning Bot!* 🌟
+    welcome_message = """
+🌟 Welcome to the English Learning Bot! 🌟
 
 Here's how to use me:
-1. Set your level using `/set <level>` (e.g., `/set 25`).
-2. Get a Bengali sentence using `/get_ban`.
+1. Set your level using /set <level> (e.g., /set 25).
+2. Get a Bengali sentence using /get_ban.
 3. Translate the sentence and send it back to me for checking.
 
-Let's get started! Use `/set <level>` to begin.
-    """)
-    await update.message.reply_text(welcome_message, parse_mode='MarkdownV2')
+Let's get started! Use /set <level> to begin.
+    """
+    await update.message.reply_text(welcome_message)
 
 # Command: Set Level
 async def set_level(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -42,11 +37,11 @@ async def set_level(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if 1 <= level <= 100:
             user_levels[user_id] = level
             user_progress[user_id] = {"correct": 0, "incorrect": 0}
-            await update.message.reply_text(f"✅ *Your level has been set to {level}.* Use `/get_ban` to start learning!", parse_mode='MarkdownV2')
+            await update.message.reply_text(f"✅ Your level has been set to {level}. Use /get_ban to start learning!")
         else:
-            await update.message.reply_text("❌ *Level must be between 1 and 100.*", parse_mode='MarkdownV2')
+            await update.message.reply_text("❌ Level must be between 1 and 100.")
     except (IndexError, ValueError):
-        await update.message.reply_text("❌ *Please provide a valid level.* Usage: `/set <level>`", parse_mode='MarkdownV2')
+        await update.message.reply_text("❌ Please provide a valid level. Usage: /set <level>")
 
 # Command: Get Bengali Sentence
 async def get_ban(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -55,7 +50,7 @@ async def get_ban(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # Check if level is set
     if user_id not in user_levels:
-        await update.message.reply_text("❌ *Please set your level first using `/set <level>`.*", parse_mode='MarkdownV2')
+        await update.message.reply_text("❌ Please set your level first using /set <level>.")
         return
 
     level = user_levels[user_id]
@@ -71,13 +66,11 @@ async def get_ban(update: Update, context: ContextTypes.DEFAULT_TYPE):
             # Store the tracking code in the user's context
             context.user_data["tracking_code"] = tracking_code
 
-            # Escape special characters in the sentence
-            escaped_sentence = escape_markdown(sentence)
-            await update.message.reply_text(f"📝 *Translate this sentence:*\n\n`{escaped_sentence}`", parse_mode='MarkdownV2')
+            await update.message.reply_text(f"📝 Translate this sentence:\n\n{sentence}")
         else:
-            await update.message.reply_text("❌ *Failed to get a sentence. Please try again later.*", parse_mode='MarkdownV2')
+            await update.message.reply_text("❌ Failed to get a sentence. Please try again later.")
     except Exception as e:
-        await update.message.reply_text(f"❌ *An error occurred:* `{escape_markdown(str(e))}`", parse_mode='MarkdownV2')
+        await update.message.reply_text(f"❌ An error occurred: {str(e)}")
 
 # Handle Translation Response
 async def handle_translation(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -88,7 +81,7 @@ async def handle_translation(update: Update, context: ContextTypes.DEFAULT_TYPE)
     # Check if there's a tracking code
     tracking_code = context.user_data.get("tracking_code")
     if not tracking_code:
-        await update.message.reply_text("❌ *No active translation task. Use `/get_ban` to start.*", parse_mode='MarkdownV2')
+        await update.message.reply_text("❌ No active translation task. Use /get_ban to start.")
         return
 
     # Call the API to check the translation
@@ -98,31 +91,31 @@ async def handle_translation(update: Update, context: ContextTypes.DEFAULT_TYPE)
             data = response.json()
             if data.get("status") == "correct":
                 user_progress[user_id]["correct"] += 1
-                correct_translation = escape_markdown(data.get("correct_translation", "No correct translation provided."))
+                correct_translation = data.get("correct_translation", "No correct translation provided.")
                 message = (
-                    f"✅ *Correct!* 🎉\n\n"
-                    f"**Why it's correct:**\n"
+                    f"✅ Correct! 🎉\n\n"
+                    f"Why it's correct:\n"
                     f"- Your translation matches the Bengali sentence perfectly.\n"
                     f"- Grammar, spelling, and meaning are all accurate.\n\n"
-                    f"**Correct Translation:** `{correct_translation}`"
+                    f"Correct Translation: {correct_translation}"
                 )
-                await update.message.reply_text(message, parse_mode='MarkdownV2')
+                await update.message.reply_text(message)
             else:
                 user_progress[user_id]["incorrect"] += 1
-                why_incorrect = escape_markdown(data.get("why", "No specific reason provided."))
-                correct_translation = escape_markdown(data.get("correct_translation", "No correct translation provided."))
+                why_incorrect = data.get("why", "No specific reason provided.")
+                correct_translation = data.get("correct_translation", "No correct translation provided.")
 
                 error_message = (
-                    f"❌ *Incorrect. Here's why:*\n\n"
-                    f"**Why it's incorrect:**\n"
+                    f"❌ Incorrect. Here's why:\n\n"
+                    f"Why it's incorrect:\n"
                     f"- {why_incorrect}\n\n"
-                    f"**Correct Translation:** `{correct_translation}`"
+                    f"Correct Translation: {correct_translation}"
                 )
-                await update.message.reply_text(error_message, parse_mode='MarkdownV2')
+                await update.message.reply_text(error_message)
         else:
-            await update.message.reply_text("❌ *Failed to check your translation. Please try again later.*", parse_mode='MarkdownV2')
+            await update.message.reply_text("❌ Failed to check your translation. Please try again later.")
     except Exception as e:
-        await update.message.reply_text(f"❌ *An error occurred:* `{escape_markdown(str(e))}`", parse_mode='MarkdownV2')
+        await update.message.reply_text(f"❌ An error occurred: {str(e)}")
 
 # Command: Progress
 async def progress(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -131,13 +124,13 @@ async def progress(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if user_id in user_progress:
         progress = user_progress[user_id]
         message = (
-            f"📊 *Your Progress:*\n\n"
-            f"✅ *Correct Translations:* `{progress['correct']}`\n"
-            f"❌ *Incorrect Translations:* `{progress['incorrect']}`"
+            f"📊 Your Progress:\n\n"
+            f"✅ Correct Translations: {progress['correct']}\n"
+            f"❌ Incorrect Translations: {progress['incorrect']}"
         )
-        await update.message.reply_text(message, parse_mode='MarkdownV2')
+        await update.message.reply_text(message)
     else:
-        await update.message.reply_text("❌ *No progress found. Please set your level and start translating.*", parse_mode='MarkdownV2')
+        await update.message.reply_text("❌ No progress found. Please set your level and start translating.")
 
 # Main Function
 def main():
