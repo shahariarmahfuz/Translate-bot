@@ -3,7 +3,6 @@ import requests
 import re
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackContext
-import random
 
 # টেলিগ্রাম বট টোকেন (নিজের টোকেন বসান)
 TELEGRAM_BOT_TOKEN = "7669153355:AAHFQrk5U6Uqno-i4v166VRMwdN34fsq8Kk"
@@ -22,15 +21,32 @@ def escape_markdown_v2(text):
 async def start(update: Update, context: CallbackContext) -> None:
     """ ইউজার যখন /start দিবে, তখন তাকে লেভেল সেট করতে বলা হবে """
     user_id = update.message.chat_id
-    user_data[user_id] = {"level": None}
 
-    await update.message.reply_text(
-        "🔠 *Level Setting*\n\nআপনার অনুবাদের জন্য লেভেল সেট করুন।\n"
-        "এটি একবার সেট করলে বারবার সেট করতে হবে না।\n\n"
-        "লেভেল একটি সংখ্যা হবে ১ থেকে ১০০ পর্যন্ত।\n\n"
-        "👉 লেভেল সেট করতে `/setlevel <level>` কমান্ড ব্যবহার করুন। উদাহরণ: `/setlevel 5`",
-        parse_mode="MarkdownV2"
-    )
+    # যদি ইউজারের লেভেল না থাকে, লেভেল সেট করতে বলা হবে
+    if user_id not in user_data or not user_data[user_id].get("level"):
+        user_data[user_id] = {"level": None}
+        await update.message.reply_text(
+            "🔠 *Level Setting*\n\nআপনার অনুবাদের জন্য লেভেল সেট করুন।\n"
+            "এটি একবার সেট করলে বারবার সেট করতে হবে না।\n\n"
+            "লেভেল একটি সংখ্যা হবে ১ থেকে ১০০ পর্যন্ত।\n\n"
+            "👉 লেভেল সেট করতে `/setlevel <level>` কমান্ড ব্যবহার করুন। উদাহরণ: `/setlevel 5`",
+            parse_mode="MarkdownV2"
+        )
+    else:
+        # যদি লেভেল সেট করা থাকে, তা হলে বাংলা বাক্য ফেচ করা হবে
+        level = user_data[user_id]["level"]
+        bangla_sentence = await fetch_sentence(user_id)
+        
+        if bangla_sentence:
+            await update.message.reply_text(
+                f"আপনার লেভেল {level} অনুযায়ী বাংলা সেন্টেন্স: _{escape_markdown_v2(bangla_sentence)}_",
+                parse_mode="MarkdownV2"
+            )
+        else:
+            await update.message.reply_text(
+                "⚠️ লেভেল অনুযায়ী সেন্টেন্স পাওয়া যাচ্ছে না। আবার চেষ্টা করুন।",
+                parse_mode="MarkdownV2"
+            )
 
 async def set_level(update: Update, context: CallbackContext) -> None:
     """ ইউজার লেভেল সেট করবে """
@@ -96,7 +112,7 @@ async def handle_translation(update: Update, context: CallbackContext) -> None:
 
     # Translate API-তে অনুরোধ পাঠানো
     params = {"ban": bangla_sentence, "eng": user_translation}
-    response = requests.get("https://new-ai-buxr.onrender.com/translate", params=params)
+    response = requests.get("https://translate-vrv3.onrender.com/translate", params=params)
 
     if response.status_code == 200:
         result = response.json()
