@@ -44,7 +44,7 @@ async def start(update: Update, context: CallbackContext) -> None:
         return
 
     level = user_data[user_id]["level"]
-    params = {"level": level}
+    params = {"level": level, "id": user_id}  # Added the user_id as 'id' parameter
     try:
         response = requests.get(GET_SENTENCE_API_URL, params=params)
         response.raise_for_status()  # Raises HTTPError for bad responses (4xx or 5xx)
@@ -114,7 +114,7 @@ async def handle_translation(update: Update, context: CallbackContext) -> None:
             await update.message.reply_text(error_text, parse_mode="MarkdownV2")
 
     except requests.exceptions.RequestException as e:
-        await update.message.reply_text(f"⚠️ অনুবাদ যাচাই করতে সমস্যা হচ্ছে: {e}", parse_mode="MarkdownV2")
+        await update.message.reply_text(f"⚠️ অনুবাদ যাচাই করতে সমস্যা হচ্ছে: {escape_markdown_v2(str(e))}", parse_mode="MarkdownV2")
     except (KeyError, ValueError):
         await update.message.reply_text("⚠️ অপ্রত্যাশিত ত্রুটি ঘটেছে।", parse_mode="MarkdownV2")
 
