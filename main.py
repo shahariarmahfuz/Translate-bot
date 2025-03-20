@@ -48,26 +48,6 @@ async def set_level(update: Update, context: CallbackContext) -> None:
         await update.message.reply_text("⚠️ সঠিক লেভেল দিন। উদাহরণ: `/setlevel 10`", parse_mode="MarkdownV2")
 
 async def challenge(update: Update, context: CallbackContext) -> None:
-    """ ইউজারকে একটি বাংলা সেন্টেন্স দেওয়া হবে """
-    user_id = update.message.chat_id
-
-    if user_id not in user_data or "level" not in user_data[user_id]:
-        await update.message.reply_text("⚠️ প্রথমে লেভেল সেট করুন। উদাহরণ: `/setlevel 10`", parse_mode="MarkdownV2")
-        return
-
-    level = user_data[user_id]["level"]
-    response = requests.get(SENTENCE_API_URL.format(level=level))
-
-    if response.status_code == 200:
-        sentence = response.json().get("sentence", "")
-        user_data[user_id]["sentence"] = sentence  # ইউজারের জন্য সেন্টেন্স সংরক্ষণ
-
-        await update.message.reply_text(
-            f"🔠 *অনুবাদ চ্যালেঞ্জ\!* নিচের বাংলা সেন্টেন্সটির ইংরেজি লিখুন:\n\n*{escape_markdown_v2(sentence)}*\n\n✍️ _উত্তর দিন:_",
-            parse_mode="MarkdownV2"
-        )
-    else:
-        await update.message.reply_text("⚠️ সেন্টেন্স লোড করতে সমস্যা হচ্ছে। পরে চেষ্টা করুন।", parse_mode="MarkdownV2")
 
 async def handle_translation(update: Update, context: CallbackContext) -> None:
     """ ইউজারের উত্তর API-তে পাঠিয়ে যাচাই করা হবে """
