@@ -5,7 +5,7 @@ from telegram.ext import Application, CommandHandler, MessageHandler, filters, C
 import random
 
 # টেলিগ্রাম বট টোকেন (এটি নিজের টোকেন দিয়ে প্রতিস্থাপন করুন)
-TELEGRAM_BOT_TOKEN = "7305874644:AAEcpUBhpmmOrv0rE-0xTJsUSxsTmO5qZHw"
+TELEGRAM_BOT_TOKEN = "7669153355:AAHFQrk5U6Uqno-i4v166VRMwdN34fsq8Kk"
 
 # Flask সার্ভারের URL (এটি নিজের সার্ভারের ঠিকানা দিন)
 TRANSLATE_API_URL = "https://translate-vrv3.onrender.com/translate"
